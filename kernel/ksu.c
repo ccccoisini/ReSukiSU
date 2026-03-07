@@ -86,12 +86,18 @@ int __init kernelsu_init(void)
     return 0;
 }
 
+// in 6.8- manual hook, we use LSM rename hook
+#if LINUX_VERSION_CODE > KERNEL_VERSION(6, 8, 0) || defined(KSU_TP_HOOK)
 extern void ksu_observer_exit(void);
+#endif
+
 void kernelsu_exit(void)
 {
     ksu_allowlist_exit();
 
+#if LINUX_VERSION_CODE > KERNEL_VERSION(6, 8, 0) || defined(KSU_TP_HOOK)
     ksu_observer_exit();
+#endif
 
     ksu_throne_tracker_exit();
 
