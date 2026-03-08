@@ -486,7 +486,7 @@ class MainActivity : ComponentActivity() {
                                             key.module
                                         )
                                     }
-                                    entry<Route.Install> { InstallScreen() }
+                                    entry<Route.Install> { key -> InstallScreen(key.preselectedKernelUri) }
                                     entry<Route.Flash> { key -> FlashScreen(key.flashIt) }
                                     entry<Route.ExecuteModuleAction> { key ->
                                         ExecuteModuleActionScreen(
