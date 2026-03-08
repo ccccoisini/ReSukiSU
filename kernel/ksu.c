@@ -60,6 +60,9 @@ void sukisu_custom_config_exit(void)
 #endif
 }
 
+#ifdef KSU_TP_HOOK
+NO_STACK_PROTECTOR_WORKAROUND
+#endif
 int __init kernelsu_init(void)
 {
     pr_info("Initialized on: %s (%s) with driver version: %u\n", UTS_RELEASE,
