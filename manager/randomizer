@@ -33,6 +33,12 @@ find . -depth -type d -name 'resukisu' -execdir mv {} "$PKG_PART2" \;
 # if [ "$PKG_PART1" != "com" ]; then find . -depth -type d -name 'com' -execdir mv {} "$PKG_PART1" \;; fi
 # if [ "$PKG_PART4" != "io" ]; then find . -depth -type d -name 'io' -execdir mv {} "$PKG_PART4" \;; fi
 
+# 4. 指定 App 名字为 lucky
+# 强制扫描所有的 strings.xml 文件，将 app_name 标签里的内容替换为 lucky
+find . -type f -name "strings.xml" -exec sed -i 's/<string name="app_name">[^<]*<\/string>/<string name="app_name">lucky<\/string>/g' {} +
+find . -type f -name "strings.xml" -exec sed -i 's/<string name="app_name" translatable="false">[^<]*<\/string>/<string name="app_name" translatable="false">lucky<\/string>/g' {} +
+
+
 # 4. build.gradle.kts 注入 spoofed 标签
 # sed -i -e '/fun getGitDescribe(): String {/,/^    }/ s/\.trim()$/.trim() + "-spoofed"/' build.gradle.kts
 
