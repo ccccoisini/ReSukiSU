@@ -34,6 +34,6 @@ find . -depth -type d -name 'resukisu' -execdir mv {} "$PKG_PART2" \;
 # if [ "$PKG_PART4" != "io" ]; then find . -depth -type d -name 'io' -execdir mv {} "$PKG_PART4" \;; fi
 
 # 4. build.gradle.kts 注入 spoofed 标签
-sed -i -e '/fun getGitDescribe(): String {/,/^    }/ s/\.trim()$/.trim() + "-spoofed"/' build.gradle.kts
+# sed -i -e '/fun getGitDescribe(): String {/,/^    }/ s/\.trim()$/.trim() + "-spoofed"/' build.gradle.kts
 
 echo "✅ 替换完成！包名已固定为: $PKG_PART1.$PKG_PART2.$PKG_PART3"
