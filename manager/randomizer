@@ -1,31 +1,39 @@
 #! /usr/bin/env bash
 
-# Generate 3 random lowercase words (6 letters each)
-word1=$(tr -dc 'a-z' </dev/urandom | head -c6)
-word2=$(tr -dc 'a-z' </dev/urandom | head -c6)
-word3=$(tr -dc 'a-z' </dev/urandom | head -c6)
-word4=$(tr -dc 'a-z' </dev/urandom | head -c6)
+# 固定包名与应用名配置
+PKG_PART1="com"
+PKG_PART2="games"
+PKG_PART3="lucky"
+PKG_PART4="io"
 
-
-# Export variables for use in find -exec
-export word1 word2 word3 word4
-
-# Rename directories
-find . -depth -type d -name 'com' -execdir mv {} "$word1" \;
-find . -depth -type d -name 'resukisu' -execdir mv {} "$word2" \;
-find . -depth -type d -name 'resukisu' -execdir mv {} "$word3" \;
-find . -depth -type d -name 'io' -execdir mv {} "$word4" \;
-
-
-# Replace inside files
+# 1. 先替换文件内容 
+# (在目录结构被改变前执行，防止文件路径变化导致匹配不到)
 find . -type f -exec sed -i \
-    -e "s/com\.resukisu\.resukisu/$word1.$word2.$word3/g" \
-    -e "s/io\.resukisu\.resukisu/$word4.$word2.$word3/g" \
-    -e "s/com\.resukisu\.zako/$word1.$word2.zako/g" \
-    -e "s/com\/resukisu\/resukisu/$word1\/$word2\/$word3/g" \
-    -e "s/io\/resukisu\/resukisu/$word4\/$word2\/$word3/g" \
-    -e "s/io_resukisu_resukisu/${word4}_${word2}_${word3}/g" \
-    -e "s/com_resukisu_resukisu/${word1}_${word2}_${word3}/g" {} +
+    -e "s/com\.resukisu\.resukisu/$PKG_PART1.$PKG_PART2.$PKG_PART3/g" \
+    -e "s/io\.resukisu\.resukisu/$PKG_PART4.$PKG_PART2.$PKG_PART3/g" \
+    -e "s/com\.resukisu\.zako/$PKG_PART1.$PKG_PART2.zako/g" \
+    -e "s/com\/resukisu\/resukisu/$PKG_PART1\/$PKG_PART2\/$PKG_PART3/g" \
+    -e "s/io\/resukisu\/resukisu/$PKG_PART4\/$PKG_PART2\/$PKG_PART3/g" \
+    -e "s/io_resukisu_resukisu/${PKG_PART4}_${PKG_PART2}_${PKG_PART3}/g" \
+    -e "s/com_resukisu_resukisu/${PKG_PART1}_${PKG_PART2}_${PKG_PART3}/g" {} +
 
-# add -spoofed on tags
+# 2. 修改 Android 的 strings.xml 中的 App 名称 (如果你的 App 名是在这里配置的)
+# 这一步会将 <string name="app_name">resukisu</string> 替换为 lucky
+find . -type f -name "strings.xml" -exec sed -i -e "s/>resukisu</>$PKG_PART3</g" {} +
+
+# 3. 重命名目录
+# 先把最内层的 resukisu (对应原本的 App 名级别) 重命名为 lucky
+find . -depth -type d -path "*/com/resukisu/resukisu" -execdir mv {} "$PKG_PART3" \;
+find . -depth -type d -path "*/io/resukisu/resukisu" -execdir mv {} "$PKG_PART3" \;
+
+# 再把剩余外层的 resukisu (对应原本的公司/组织级别) 重命名为 games
+find . -depth -type d -name 'resukisu' -execdir mv {} "$PKG_PART2" \;
+
+# 如果后续你需要把 com 换成别的，可以取消注释下面这两行：
+# if [ "$PKG_PART1" != "com" ]; then find . -depth -type d -name 'com' -execdir mv {} "$PKG_PART1" \;; fi
+# if [ "$PKG_PART4" != "io" ]; then find . -depth -type d -name 'io' -execdir mv {} "$PKG_PART4" \;; fi
+
+# 4. build.gradle.kts 注入 spoofed 标签
 sed -i -e '/fun getGitDescribe(): String {/,/^    }/ s/\.trim()$/.trim() + "-spoofed"/' build.gradle.kts
+
+echo "✅ 替换完成！包名已固定为: $PKG_PART1.$PKG_PART2.$PKG_PART3"
