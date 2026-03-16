@@ -58,7 +58,6 @@
     <string name="profile_selinux_context">Konteks SELinux</string>
     <string name="profile_umount_modules">Lepas Kait Modul</string>
     <string name="failed_to_update_app_profile">Gagal memperbarui profil aplikasi untuk %s</string>
-    <string name="require_kernel_version" formatted="false">Versi KernelSU saat ini %s terlalu rendah untuk menjalankan manajer dengan benar. Harap perbarui ke versi %s atau yang lebih tinggi!</string>
     <string name="settings_umount_modules_default">Lepas kait modul secara bawaan</string>
     <string name="settings_umount_modules_default_summary">Nilai bawaan global untuk \"Lepas Kait Modul\" dalam profil aplikasi. Jika diaktifkan, ini akan menghapus semua perubahan sistem yang dibuat oleh modul untuk aplikasi tanpa profil yang ditetapkan.</string>
     <string name="profile_umount_modules_summary">Mengaktifkan opsi ini akan memungkinkan KernelSU untuk memulihkan file yang diubah oleh modul untuk aplikasi ini.</string>

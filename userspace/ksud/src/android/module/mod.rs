@@ -448,18 +448,16 @@ fn install_module_to_system(zip: &str) -> Result<()> {
     let is_metamodule = metamodule::is_metamodule(&module_prop);
 
     // Check if it's safe to install regular module
-    if !is_metamodule && let Err(is_disabled) = metamodule::check_install_safety() {
+    if !is_metamodule
+        && let Err(is_disabled) = metamodule::check_install_safety()
+        && !is_disabled
+    {
         println!("\n❌ Installation Blocked");
         println!("┌────────────────────────────────");
         println!("│ A metamodule with custom installer is active");
         println!("│");
-        if is_disabled {
-            println!("│ Current state: Disabled");
-            println!("│ Action required: Re-enable or uninstall it, then reboot");
-        } else {
-            println!("│ Current state: Pending changes");
-            println!("│ Action required: Reboot to apply changes first");
-        }
+        println!("│ Current state: Pending changes");
+        println!("│ Action required: Reboot to apply changes first");
         println!("└─────────────────────────────────\n");
         bail!("Metamodule installation blocked");
     }

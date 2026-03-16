@@ -61,7 +61,6 @@
     <string name="profile_selinux_context">SELinux bağlamı</string>
     <string name="profile_umount_modules">Modülleri bağlamayı kaldır</string>
     <string name="failed_to_update_app_profile">%s için Uygulama Profili güncellenemedi</string>
-    <string name="require_kernel_version" formatted="false">Mevcut KernelSU sürümü %s, yöneticinin düzgün çalışması için çok düşük. Lütfen sürüm %s veya daha yüksek bir sürüme yükseltin!</string>
     <string name="settings_umount_modules_default">Modülleri varsayılan olarak bağlamayı kaldır</string>
     <string name="settings_umount_modules_default_summary">Uygulama Profilindeki \"Modülleri bağlamayı kaldır\" için küresel varsayılan değer. Etkinleştirilirse, profil ayarlanmamış uygulamalar için sistemdeki tüm modül değişikliklerini kaldırır.</string>
     <string name="profile_umount_modules_summary">Bu seçeneği etkinleştirmek, KernelSU\'nun bu uygulama için modüller tarafından değiştirilen dosyaları geri yüklemesine izin verecektir.</string>

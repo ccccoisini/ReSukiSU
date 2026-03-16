@@ -59,7 +59,6 @@
     <string name="profile_selinux_context">Контекст SELinux</string>
     <string name="profile_umount_modules">Відмонтувати модулі</string>
     <string name="failed_to_update_app_profile">Не вдалося оновити профіль додатку для %s</string>
-    <string name="require_kernel_version" formatted="false">Поточна версія KernelSU %s занадто низька для коректної роботи менеджера. Будь ласка, оновіться до версії %s або вище!</string>
     <string name="settings_umount_modules_default">Відмонтовувати модулі за замовчуванням</string>
     <string name="settings_umount_modules_default_summary">Глобальне значення за замовчуванням для \"Відмонтувати модулі\" у профілі додатку. Якщо ввімкнено, це видалить усі зміни системи, зроблені модулями, для додатків без встановленого профілю.</string>
     <string name="profile_umount_modules_summary">Увімкнення цієї опції дозволить KernelSU відновити будь-які змінені модулями файли для цього додатку.</string>

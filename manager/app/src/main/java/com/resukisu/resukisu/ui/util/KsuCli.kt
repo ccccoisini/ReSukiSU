@@ -1,5 +1,6 @@
 package com.resukisu.resukisu.ui.util
 
+import android.annotation.SuppressLint
 import android.net.Uri
 import android.os.Environment
 import android.os.Parcelable
@@ -12,6 +13,7 @@ import com.resukisu.resukisu.ksuApp
 import com.topjohnwu.superuser.CallbackList
 import com.topjohnwu.superuser.Shell
 import com.topjohnwu.superuser.ShellUtils
+import com.topjohnwu.superuser.internal.MainShell
 import com.topjohnwu.superuser.io.SuFile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -31,9 +33,51 @@ private fun getKsuDaemonPath(): String {
     return ksuApp.applicationInfo.nativeLibraryDir + File.separator + "libksud.so"
 }
 
+@SuppressLint("RestrictedApi")
 object KsuCli {
-    var SHELL: Shell = createRootShell()
+    var SHELL: Shell
     val GLOBAL_MNT_SHELL: Shell = createRootShell(true)
+
+    init {
+        val clazz = MainShell::class.java // reset MainShell
+        clazz.getDeclaredField("isInitMain").apply {
+            isAccessible = true
+            setBoolean(null, false)
+            isAccessible = false
+        }
+
+        clazz.getDeclaredField("mainShell").apply {
+            isAccessible = true
+            @Suppress("UNCHECKED_CAST")
+            val arr = get(null) as Array<Any?>
+            arr[0] = null
+            isAccessible = false
+        }
+
+        clazz.getDeclaredField("mainBuilder").apply {
+            isAccessible = true
+            set(null, null)
+            isAccessible = false
+        }
+
+        val builder = Shell.Builder.create()
+        SHELL = try {
+            builder.setCommands(getKsuDaemonPath(), "debug", "su")
+            builder.build()
+        } catch (e: Throwable) {
+            Log.w(TAG, "ksu failed: ", e)
+            try {
+                builder.setCommands("su")
+                builder.build()
+            } catch (e: Throwable) {
+                Log.e(TAG, "su failed: ", e)
+                builder.setCommands("sh")
+                builder.build()
+            }
+        }
+
+        MainShell.setBuilder(builder)
+    }
 }
 
 fun getRootShell(globalMnt: Boolean = false): Shell {
@@ -81,6 +125,15 @@ fun execKsud(args: String, newShell: Boolean = false): Boolean {
     } else {
         ShellUtils.fastCmdResult(getRootShell(), "${getKsuDaemonPath()} $args")
     }
+}
+
+suspend fun isOfficialSignature(): Boolean = withContext(Dispatchers.IO) {
+    val shell = getRootShell()
+    val out = shell.newJob()
+        .add("${getKsuDaemonPath()} debug get-sign ${ksuApp.packageResourcePath}")
+        .to(ArrayList<String>(), null).exec().out
+    out.firstOrNull()?.trim()
+        .orEmpty() == "size: 0x377, hash: d3469712b6214462764a1d8d3e5cbe1d6819a0b629791b9f4101867821f1df64"
 }
 
 suspend fun getFeatureStatus(feature: String): String = withContext(Dispatchers.IO) {
@@ -330,6 +383,10 @@ fun installBoot(
 
 fun reboot(reason: String = "") {
     val shell = getRootShell()
+    if (reason == "soft_reboot") {
+        ShellUtils.fastCmd(shell, "setprop ctl.restart zygote")
+        return
+    }
     if (reason == "recovery") {
         // KEYCODE_POWER = 26, hide incorrect "Factory data reset" message
         ShellUtils.fastCmd(shell, "/system/bin/input keyevent 26")

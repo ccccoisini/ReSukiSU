@@ -40,7 +40,7 @@ config KSU_ALLOWLIST_WORKAROUND
 config KSU_MULTI_MANAGER_SUPPORT
 	bool "Multi KernelSU manager support"
 	depends on KSU
-	default n
+	default y
 	help
 		Enable multi KernelSU manager support
 
