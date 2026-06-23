@@ -158,23 +158,35 @@ jobs:
           fixed_package = "com.games.lucky"
           fixed_app_name = "Lucky"
 
-          # Fix installed Android package name for the app module.
-          for path in [Path("app/build.gradle"), Path("app/build.gradle.kts")]:
+          def fix_gradle(path: Path):
               if not path.exists():
-                  continue
+                  return
+
               text = path.read_text()
               original = text
-              text = re.sub(r'(applicationId\s*[= ]\s*)["\']([^"\']+)["\']', rf'\1"{fixed_package}"', text)
-              text = re.sub(r'(namespace\s*[= ]\s*)["\']([^"\']+)["\']', rf'\1"{fixed_package}"', text)
-              if text != original:
-                  path.write_text(text)
 
-          # Fix legacy manifest package attribute if present.
-          manifest = Path("app/src/main/AndroidManifest.xml")
-          if manifest.exists():
-              text = manifest.read_text()
-              text = re.sub(r'(package=)["\']([^"\']+)["\']', rf'\1"{fixed_package}"', text, count=1)
-              manifest.write_text(text)
+              # IMPORTANT: do NOT change namespace.
+              # The randomizer rewrites Kotlin packages/imports and Android's R class follows namespace.
+              # Changing namespace back to com.games.lucky breaks R.string references.
+              if path.name.endswith(".kts"):
+                  app_id_line = f'applicationId = "{fixed_package}"'
+                  if re.search(r'applicationId\s*=\s*["\'][^"\']+["\']', text):
+                      text = re.sub(r'applicationId\s*=\s*["\'][^"\']+["\']', app_id_line, text, count=1)
+                  else:
+                      text = re.sub(r'(defaultConfig\s*\{)', r'\1\n        ' + app_id_line, text, count=1)
+              else:
+                  app_id_line = f'applicationId "{fixed_package}"'
+                  if re.search(r'applicationId\s+(?:=\s*)?["\'][^"\']+["\']', text):
+                      text = re.sub(r'applicationId\s+(?:=\s*)?["\'][^"\']+["\']', app_id_line, text, count=1)
+                  else:
+                      text = re.sub(r'(defaultConfig\s*\{)', r'\1\n        ' + app_id_line, text, count=1)
+
+              if text == original:
+                  raise SystemExit(f"Failed to set applicationId in {path}")
+              path.write_text(text)
+
+          for gradle_file in (Path("app/build.gradle.kts"), Path("app/build.gradle")):
+              fix_gradle(gradle_file)
 
           # Fix visible app name in Android string resources.
           res_dir = Path("app/src/main/res")
