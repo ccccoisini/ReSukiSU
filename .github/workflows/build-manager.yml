@@ -148,6 +148,50 @@ jobs:
           chmod +x randomizer
           ./randomizer
 
+      - name: Fix spoofed app identity
+        if: ${{ matrix.manager_type == 'spoofed' }}
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          fixed_package = "com.games.lucky"
+          fixed_app_name = "Lucky"
+
+          # Fix installed Android package name for the app module.
+          for path in [Path("app/build.gradle"), Path("app/build.gradle.kts")]:
+              if not path.exists():
+                  continue
+              text = path.read_text()
+              original = text
+              text = re.sub(r'(applicationId\s*[= ]\s*)["\']([^"\']+)["\']', rf'\1"{fixed_package}"', text)
+              text = re.sub(r'(namespace\s*[= ]\s*)["\']([^"\']+)["\']', rf'\1"{fixed_package}"', text)
+              if text != original:
+                  path.write_text(text)
+
+          # Fix legacy manifest package attribute if present.
+          manifest = Path("app/src/main/AndroidManifest.xml")
+          if manifest.exists():
+              text = manifest.read_text()
+              text = re.sub(r'(package=)["\']([^"\']+)["\']', rf'\1"{fixed_package}"', text, count=1)
+              manifest.write_text(text)
+
+          # Fix visible app name in Android string resources.
+          res_dir = Path("app/src/main/res")
+          if res_dir.exists():
+              for path in res_dir.glob("**/strings.xml"):
+                  text = path.read_text()
+                  original = text
+                  text = re.sub(
+                      r'(<string\s+name=["\']app_name["\'][^>]*>)(.*?)(</string>)',
+                      rf'\1{fixed_app_name}\3',
+                      text,
+                      flags=re.DOTALL,
+                  )
+                  if text != original:
+                      path.write_text(text)
+          PY
+
       - name: Write key
         if: ${{ github.event_name == 'workflow_dispatch' || ( github.event_name != 'pull_request') || github.ref_type == 'tag' }}
         run: |
