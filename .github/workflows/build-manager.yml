@@ -204,6 +204,22 @@ jobs:
                       path.write_text(text)
           PY
 
+      - name: Remove spoofed version suffix
+        if: ${{ matrix.manager_type == 'spoofed' }}
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("build.gradle.kts")
+          text = path.read_text()
+
+          # randomizer appends "-spoofed" to getGitDescribe(), which becomes the visible versionName.
+          text = text.replace('.trim() + "-spoofed"', '.trim()')
+          text = text.replace(".trim() + '-spoofed'", ".trim()")
+
+          path.write_text(text)
+          PY
+
       - name: Write key
         if: ${{ github.event_name == 'workflow_dispatch' || ( github.event_name != 'pull_request') || github.ref_type == 'tag' }}
         run: |
