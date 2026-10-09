@@ -48,8 +48,12 @@ pub struct Args {
     #[arg(short = 'v', long = "verbose")]
     verbose: bool,
 
+    /// Ignored compatibility flag for applications using -w when setting properties.
+    #[arg(short = 'w')]
+    _ignored_wait: bool,
+
     /// Wait for a property to exist or change from a given value to another value.
-    #[arg(short = 'w', long = "wait")]
+    #[arg(long = "wait")]
     wait: bool,
 
     /// Timeout in seconds for --wait (default: wait forever).
@@ -154,7 +158,7 @@ fn execute(cli: &Args) -> Result<()> {
         bail!("multiple operation modes detected");
     }
 
-    // -w: wait mode
+    // --wait: wait mode
     if cli.wait {
         let name = cli.name().context("--wait requires a property name")?;
         let timeout = cli.timeout.map(Duration::from_secs_f64);

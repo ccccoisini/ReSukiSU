@@ -203,7 +203,7 @@ const fn resetprop() -> ResetProp {
 fn reset_boot_completed() -> Result<()> {
     sys_prop::init().context("Failed to initialize system property API")?;
     let rp = resetprop();
-    // Set prop value to 0 in advance to ensure resetprop -w works
+    // Set prop value to 0 in advance to ensure resetprop --wait works
     info!("reset boot complete prop to 0");
     rp.set("sys.boot_completed", "0")
         .context("Failed to set sys.boot_completed to 0")?;
