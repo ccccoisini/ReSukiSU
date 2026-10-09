@@ -149,7 +149,7 @@ android {
 
     splits {
         abi {
-            isEnable = isReleaseTask
+            isEnable = isReleaseTask && managerAbis.size > 1
             reset()
             include(*managerAbis.toTypedArray())
             isUniversalApk = managerAbis.size > 1
@@ -169,7 +169,8 @@ android {
 
 base {
     archivesName.set(
-        "ReSukiSU_${managerVersionName}_${managerVersionCode}"
+        "ReSukiSU_${managerVersionName}_${managerVersionCode}" +
+            if (managerAbis.size == 1) "-${managerAbis.single()}" else ""
     )
 }
 
