@@ -36,6 +36,14 @@ val baseCppFlags = baseCFlags + "-fno-rtti"
 val isReleaseTask =
     project.gradle.startParameter.taskNames.any { it.contains("Release", ignoreCase = true) }
 
+val supportedManagerAbis = listOf("arm64-v8a", "x86_64", "armeabi-v7a")
+val managerAbis = providers.gradleProperty("managerAbis")
+    .map { value -> value.split(',').map { it.trim() }.distinct() }
+    .getOrElse(supportedManagerAbis)
+require(managerAbis.isNotEmpty() && managerAbis.all { it in supportedManagerAbis }) {
+    "managerAbis must contain supported ABIs: ${supportedManagerAbis.joinToString()}"
+}
+
 android {
     namespace = "com.resukisu.resukisu"
 
@@ -135,7 +143,7 @@ android {
         }
 
         ndk {
-            abiFilters += listOf("arm64-v8a", "x86_64", "armeabi-v7a")
+            abiFilters += managerAbis
         }
     }
 
@@ -143,8 +151,8 @@ android {
         abi {
             isEnable = isReleaseTask
             reset()
-            include("arm64-v8a", "x86_64", "armeabi-v7a")
-            isUniversalApk = true
+            include(*managerAbis.toTypedArray())
+            isUniversalApk = managerAbis.size > 1
         }
     }
 
