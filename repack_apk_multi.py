@@ -242,9 +242,7 @@ def main():
     # Summary
     print(f"\n{'='*50}")
     print(f"[SUMMARY] Processed {success_count}/{len(apks)} APKs successfully")
-    if success_count == 0:
-        return 1
-    return 0
+    return 0 if success_count == len(apks) else 1
 
 
 if __name__ == "__main__":

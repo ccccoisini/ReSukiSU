@@ -100,9 +100,9 @@ jobs:
       os: ${{ matrix.os }}
 
   build-manager:
-    needs: [generate-key]
+    needs: [generate-key, build-ksud]
     runs-on: ubuntu-latest
-    if: always() && needs.generate-key.result == 'success'
+    if: always() && needs.generate-key.result == 'success' && needs.build-ksud.result == 'success'
     strategy:
       fail-fast: false
       matrix:
@@ -268,7 +268,7 @@ jobs:
             ./gradlew assemble${{ matrix.build_type }} -Pcommit=${{ steps.commit.outputs.COMMIT_SHA }}
           fi
 
-      - name: Upload artifact
+      - name: Upload intermediate APKs (without ksud)
         uses: actions/upload-artifact@v7
         with:
           name: ${{ steps.determine.outputs.title }}-gradle-${{ matrix.build_type }}
@@ -302,6 +302,9 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
+
+      - name: Test APK repacking
+        run: python3 -m unittest discover -s scripts -p test_repack_apk_multi.py -v
 
       - name: Determine manager variant
         id: determine
@@ -358,7 +361,6 @@ jobs:
           cp -f "$X86_64_KSUD" target/x86_64-linux-android/release/ksud
 
       - name: Prepare signing inputs
-        if: ${{ github.event_name == 'pull_request' || (github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/ci' || github.ref == 'refs/heads/sync-upstream')) || github.ref_type == 'tag' }}
         env:
           PR_KEYSTORE: ${{ needs.generate-key.outputs.keystore }}
           PR_KEYSTORE_PASSWORD: ${{ needs.generate-key.outputs.keystore_password }}
@@ -384,7 +386,6 @@ jobs:
           fi
 
       - name: Repack and resign
-        if: ${{ github.event_name == 'pull_request' || (github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/ci' || github.ref == 'refs/heads/sync-upstream')) || github.ref_type == 'tag' }}
         run: |
           python3 repack_apk_multi.py repack \
             -b ${{ matrix.build_type }} \
@@ -398,17 +399,40 @@ jobs:
             -S "$SIGN_KEY_PASSWORD" \
             --strip
 
-      - name: Delete gradle build
-        uses: GeekyEggo/delete-artifact@v6
-        with:
-          name: ${{ steps.determine.outputs.title }}-gradle-${{ matrix.build_type }}
-        
+      - name: Verify packaged ksud
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+
+          apks = sorted(Path("dist").glob("*.apk"))
+          if not apks:
+              raise SystemExit("No repacked APKs found")
+          for apk in apks:
+              with ZipFile(apk) as archive:
+                  arches = {name.split("/")[1] for name in archive.namelist() if name.startswith("lib/")}
+                  if not arches:
+                      raise SystemExit(f"{apk.name}: no native libraries found")
+                  for arch in sorted(arches):
+                      library = f"lib/{arch}/libksud.so"
+                      if library not in archive.namelist():
+                          raise SystemExit(f"{apk.name}: missing {library}")
+                      if archive.read(library)[:4] != b"\x7fELF":
+                          raise SystemExit(f"{apk.name}: invalid ELF in {library}")
+              print(f"Verified {apk.name}: {', '.join(sorted(arches))}")
+          PY
+
       - name: Upload build artifact
-        if: ${{ github.event_name == 'pull_request' || (github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/ci' || github.ref == 'refs/heads/sync-upstream')) || github.ref_type == 'tag' }}
         uses: actions/upload-artifact@v7
         with:
           name: ${{ steps.determine.outputs.title }}-${{ matrix.build_type }}
           path: dist/*.apk
+          if-no-files-found: error
+
+      - name: Delete gradle build
+        uses: GeekyEggo/delete-artifact@v6
+        with:
+          name: ${{ steps.determine.outputs.title }}-gradle-${{ matrix.build_type }}
 
   upload-telegram:
     needs: repack-manager
